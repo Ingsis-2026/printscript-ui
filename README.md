@@ -39,6 +39,25 @@ npm run dev
 
 This will start the Vite development server. You can now open your browser and navigate to http://localhost:5173/ to see the application running.
 
+## Snippet Searcher backend
+
+The UI talks to [`snippet-service`](https://github.com/Ingsis-2026/snippet-service) through `SnippetServiceOperations` ([snippetServiceOperations.ts](src/utils/snippetServiceOperations.ts)). Every call goes to `/api`: in dev the Vite server proxies it to snippet-service, and in the Docker image nginx does. Neither keeps the `/api` prefix.
+
+| Variable | Default | |
+|---|---|---|
+| `SNIPPET_SERVICE_URL` | `http://localhost:8080` in dev, `http://snippet-service:8080` in Docker | Where `/api` goes. Read when the server starts. |
+| `VITE_USER_ID` | `dev-user` | Who the UI acts as until Auth0 is enabled, sent as `X-User-Id`. Baked into the build. |
+| `VITE_PRINTSCRIPT_VERSION` | `1.1` | The version new snippets are created with. Baked into the build. |
+
+Until Auth0, sharing takes whatever you type in the share dialog as the user id. snippet-service does not support formatting unsaved code, deleting snippets, or editing and removing tests yet: those buttons fail with an error in the console.
+
+```bash
+docker build -t printscript-ui .
+docker run -p 5173:80 -e SNIPPET_SERVICE_URL=http://snippet-service:8080 printscript-ui
+```
+
+nginx resolves `SNIPPET_SERVICE_URL` with Docker's DNS, so the container has to run on a Docker network (Compose or Swarm), not the default bridge.
+
 ## Build production version
 
 To use this UI in production you should use an optimized and static version, this command will generate this version in `dist` directory:  
