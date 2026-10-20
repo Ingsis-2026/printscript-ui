@@ -10,5 +10,14 @@ export default defineConfig(({ mode }) => {
       'process.env.BACKEND_URL': JSON.stringify(env.BACKEND_URL)
     },
     plugins: [react()],
+    // Same as nginx in the Docker image: /api goes to snippet-service, without the prefix.
+    server: {
+      proxy: {
+        '/api': {
+          target: env.SNIPPET_SERVICE_URL ?? 'http://localhost:8080',
+          rewrite: (path) => path.replace(/^\/api/, ''),
+        },
+      },
+    },
   }
 })
