@@ -1,0 +1,31 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ "master", "dev" ]
+  pull_request:
+    branches: [ "master", "dev" ]
+
+jobs:
+  build:
+    name: Type Check & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      # cypress es una dependencia, pero el build no necesita su binario.
+      - name: Install dependencies
+        run: npm ci
+        env:
+          CYPRESS_INSTALL_BINARY: 0
+
+      # tsc y vite build, igual que en el Dockerfile.
+      - name: Build
+        run: npm run build
