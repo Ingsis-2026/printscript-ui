@@ -60,9 +60,6 @@ const COMPLIANCE: Record<SnippetResponse['status'], ComplianceEnum> = {
   NOT_COMPLIANT: 'not-compliant',
 }
 
-const notYetSupported = (operation: string) =>
-    Promise.reject(new Error(`snippet-service does not support ${operation} yet`))
-
 /**
  * Talks to snippet-service. Until Auth0 is enabled, every request goes as the user in VITE_USER_ID,
  * through the X-User-Id header.
@@ -144,8 +141,10 @@ export class SnippetServiceOperations implements SnippetOperations {
     return this.putRules('linting', newRules)
   }
 
-  formatSnippet(): Promise<string> {
-    return notYetSupported('formatting code that is not saved')
+  // Formats what is in the editor, without saving it, with the rules of the snippet's owner.
+  async formatSnippet(snippetId: string, content: string): Promise<string> {
+    const {data} = await this.client.post<{content: string}>(`/snippets/${snippetId}/format`, {content})
+    return data.content
   }
 
   async getTestCases(snippetId: string): Promise<TestCase[]> {
@@ -154,17 +153,21 @@ export class SnippetServiceOperations implements SnippetOperations {
   }
 
   async postTestCase(snippetId: string, testCase: Partial<TestCase>): Promise<TestCase> {
-    if (testCase.id) return notYetSupported('editing a test')
-    const {data} = await this.client.post<TestCaseResponse>(`/snippets/${snippetId}/tests`, {
+    const body = {
       name: testCase.name,
       inputs: testCase.input ?? [],
       outputs: testCase.output ?? [],
-    })
+    }
+    // A test with an id already exists: saving it again replaces it.
+    const {data} = testCase.id
+        ? await this.client.put<TestCaseResponse>(`/snippets/${snippetId}/tests/${testCase.id}`, body)
+        : await this.client.post<TestCaseResponse>(`/snippets/${snippetId}/tests`, body)
     return toTestCase(data)
   }
 
-  removeTestCase(): Promise<string> {
-    return notYetSupported('removing a test')
+  async removeTestCase(snippetId: string, id: string): Promise<string> {
+    await this.client.delete(`/snippets/${snippetId}/tests/${id}`)
+    return id
   }
 
   async testSnippet(snippetId: string, testCase: Partial<TestCase>): Promise<TestCaseResult> {
@@ -173,8 +176,9 @@ export class SnippetServiceOperations implements SnippetOperations {
     return data.passed ? 'success' : 'fail'
   }
 
-  deleteSnippet(): Promise<string> {
-    return notYetSupported('deleting a snippet')
+  async deleteSnippet(id: string): Promise<string> {
+    await this.client.delete(`/snippets/${id}`)
+    return id
   }
 
   getFileTypes(): Promise<FileType[]> {
