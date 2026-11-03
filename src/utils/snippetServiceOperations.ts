@@ -10,8 +10,6 @@ import {Rule} from '../types/Rule.ts'
 
 // In dev, Vite proxies /api to snippet-service; in the Docker image, nginx does.
 const BACKEND_URL: string = import.meta.env.VITE_BACKEND_URL ?? '/api'
-// Who the UI acts as until Auth0 is enabled.
-const USER_ID: string = import.meta.env.VITE_USER_ID ?? 'dev-user'
 // The version new snippets are created with: the UI does not ask for one.
 const PRINTSCRIPT_VERSION: string = import.meta.env.VITE_PRINTSCRIPT_VERSION ?? '1.1'
 
@@ -61,14 +59,19 @@ const COMPLIANCE: Record<SnippetResponse['status'], ComplianceEnum> = {
 }
 
 /**
- * Talks to snippet-service. Until Auth0 is enabled, every request goes as the user in VITE_USER_ID,
- * through the X-User-Id header.
+ * Talks to snippet-service as the logged-in user: every request carries their Auth0 access token,
+ * and snippet-service takes the user from it.
  */
 export class SnippetServiceOperations implements SnippetOperations {
   private readonly client: AxiosInstance
 
-  constructor(baseUrl: string = BACKEND_URL, userId: string = USER_ID) {
-    this.client = axios.create({baseURL: baseUrl, headers: {'X-User-Id': userId}})
+  // getToken is Auth0's getAccessTokenSilently: it returns the cached token, or a new one if it expired.
+  constructor(getToken: () => Promise<string>, baseUrl: string = BACKEND_URL) {
+    this.client = axios.create({baseURL: baseUrl})
+    this.client.interceptors.request.use(async config => {
+      config.headers.Authorization = `Bearer ${await getToken()}`
+      return config
+    })
     autoBind(this)
   }
 
@@ -114,7 +117,7 @@ export class SnippetServiceOperations implements SnippetOperations {
     return toSnippet(data)
   }
 
-  // There is no user list until Auth0: whatever is typed is taken as the id to share with.
+  // There is no user list yet (US7): whatever is typed is taken as the Auth0 user id to share with.
   getUserFriends(name: string = '', page: number = 1, pageSize: number = 10): Promise<PaginatedUsers> {
     const users = name ? [{id: name, name}] : []
     return Promise.resolve({page, page_size: pageSize, count: users.length, users})
