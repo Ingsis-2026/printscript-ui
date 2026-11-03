@@ -24,7 +24,7 @@ type SnippetResponse = {
   version: string
   content: string
   ownerId: string
-  status: 'PENDING' | 'COMPLIANT' | 'NOT_COMPLIANT'
+  status: 'PENDING' | 'COMPLIANT' | 'NOT_COMPLIANT' | 'INVALID'
 }
 
 type SnippetPage = {
@@ -58,6 +58,8 @@ const COMPLIANCE: Record<SnippetResponse['status'], ComplianceEnum> = {
   PENDING: 'pending',
   COMPLIANT: 'compliant',
   NOT_COMPLIANT: 'not-compliant',
+  // The current parser no longer accepts it: it was saved with an earlier version.
+  INVALID: 'failed',
 }
 
 /**
