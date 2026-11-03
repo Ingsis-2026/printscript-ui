@@ -49,7 +49,7 @@ The UI talks to [`snippet-service`](https://github.com/Ingsis-2026/snippet-servi
 | `VITE_AUTH0_DOMAIN` / `VITE_AUTH0_CLIENT_ID` / `VITE_AUTH0_AUDIENCE` | The development tenant, its "Snippet Searcher UI" app and `https://snippet-searcher/api` | Where users log in, and the API their access token is for. None of them is a secret. Baked into the build. |
 | `VITE_PRINTSCRIPT_VERSION` | `1.1` | The version new snippets are created with. Baked into the build. |
 
-Every page asks for an Auth0 login, and every call to snippet-service carries the user's access token in `Authorization`. Until there is a user list (US7), sharing takes whatever you type in the share dialog as the Auth0 user id (`auth0|...`).
+Every page asks for an Auth0 login, and every call to snippet-service carries the user's access token in `Authorization`. The share dialog lists the users whose name or email starts with what you type (US7), from snippet-service's `GET /users`.
 
 ```bash
 docker build -t printscript-ui .
