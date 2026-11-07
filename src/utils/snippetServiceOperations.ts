@@ -45,6 +45,13 @@ type TestCaseResponse = {
   outputs: string[]
 }
 
+type UserPage = {
+  users: {id: string, name: string, email: string | null}[]
+  page: number
+  size: number
+  total: number
+}
+
 type TestRunResponse = {
   passed: boolean
 }
@@ -117,10 +124,19 @@ export class SnippetServiceOperations implements SnippetOperations {
     return toSnippet(data)
   }
 
-  // There is no user list yet (US7): whatever is typed is taken as the Auth0 user id to share with.
-  getUserFriends(name: string = '', page: number = 1, pageSize: number = 10): Promise<PaginatedUsers> {
-    const users = name ? [{id: name, name}] : []
-    return Promise.resolve({page, page_size: pageSize, count: users.length, users})
+  // US7: the users whose name or email starts with what was typed, without the user sharing.
+  async getUserFriends(name: string = '', page: number = 0, pageSize: number = 10): Promise<PaginatedUsers> {
+    const {data} = await this.client.get<UserPage>('/users', {params: {name, page, size: pageSize}})
+    return {
+      page: data.page,
+      page_size: data.size,
+      count: data.total,
+      // The email tells apart two users with the same name.
+      users: data.users.map(user => ({
+        id: user.id,
+        name: user.email && user.email !== user.name ? `${user.name} (${user.email})` : user.name,
+      })),
+    }
   }
 
   async shareSnippet(snippetId: string, userId: string): Promise<Snippet> {
