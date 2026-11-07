@@ -2,7 +2,8 @@ import {useState} from "react";
 import {TestCase} from "../../types/TestCase.ts";
 import {Autocomplete, Box, Button, Chip, TextField, Typography} from "@mui/material";
 import {BugReport, Delete, Save} from "@mui/icons-material";
-import {useTestSnippet} from "../../utils/queries.tsx";
+import {useExecution} from "../../hooks/useExecution.ts";
+import {SnippetExecution} from "../../screens/SnippetExecution.tsx";
 
 type TabPanelProps = {
     snippetId: string;
@@ -16,7 +17,9 @@ type TabPanelProps = {
 export const TabPanel = ({snippetId, value, index, test: initialTest, setTestCase, removeTestCase}: TabPanelProps) => {
     const [testData, setTestData] = useState<Partial<TestCase> | undefined>(initialTest);
 
-    const {mutateAsync: testSnippet, data} = useTestSnippet(snippetId);
+    // US9: the test runs on the server with its saved inputs, and its output shows up as it is printed.
+    const execution = useExecution(snippetId);
+    const running = execution.status === 'running';
 
 
     return (
@@ -89,13 +92,15 @@ export const TabPanel = ({snippetId, value, index, test: initialTest, setTestCas
                         <Button disabled={!testData?.name} onClick={() => setTestCase(testData ?? {})} variant={"outlined"} startIcon={<Save/>}>
                             Save
                         </Button>
-                        <Button onClick={() => testSnippet(testData ?? {})} variant={"contained"} startIcon={<BugReport/>}
-                                disableElevation>
+                        <Button onClick={() => testData?.id && execution.run(testData.id)} variant={"contained"}
+                                startIcon={<BugReport/>} disableElevation disabled={!testData?.id || running}
+                                title={testData?.id ? undefined : "Save the test before running it"}>
                             Test
                         </Button>
-                        {data && (data === "success" ? <Chip label="Pass" color="success"/> :
+                        {execution.passed !== null && (execution.passed ? <Chip label="Pass" color="success"/> :
                             <Chip label="Fail" color="error"/>)}
                     </Box>
+                    {execution.status !== 'idle' && <SnippetExecution execution={execution} minHeight={80}/>}
                 </Box>
             )}
         </div>

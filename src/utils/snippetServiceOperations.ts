@@ -9,7 +9,7 @@ import {FileType} from '../types/FileType.ts'
 import {Rule} from '../types/Rule.ts'
 
 // In dev, Vite proxies /api to snippet-service; in the Docker image, nginx does.
-const BACKEND_URL: string = import.meta.env.VITE_BACKEND_URL ?? '/api'
+export const BACKEND_URL: string = import.meta.env.VITE_BACKEND_URL ?? '/api'
 // The version new snippets are created with: the UI does not ask for one.
 const PRINTSCRIPT_VERSION: string = import.meta.env.VITE_PRINTSCRIPT_VERSION ?? '1.1'
 

@@ -1,41 +1,64 @@
-import {OutlinedInput} from "@mui/material";
-import {highlight, languages} from "prismjs";
-import Editor from "react-simple-code-editor";
-import {Bòx} from "../components/snippet-table/SnippetBox.tsx";
-import {useState} from "react";
+import {Box, OutlinedInput, Typography} from "@mui/material";
+import {KeyboardEvent, useEffect, useRef, useState} from "react";
+import {ConsoleLine, ExecutionState} from "../hooks/useExecution.ts";
 
-export const SnippetExecution = () => {
-  // Here you should provide all the logic to connect to your sockets.
+const COLORS: Record<ConsoleLine['kind'], string> = {
+  output: 'white',
+  prompt: '#66d9ef',
+  input: '#a6e22e',
+  error: '#f92672',
+  info: '#75715e',
+}
+
+type SnippetExecutionProps = {
+  execution: ExecutionState
+  minHeight?: number
+}
+
+/**
+ * The run console (US9 and US10): each output appears as soon as the code prints it, and the input
+ * box is enabled only while the code is waiting for one.
+ */
+export const SnippetExecution = ({execution, minHeight = 200}: SnippetExecutionProps) => {
+  const {lines, status, sendInput} = execution
   const [input, setInput] = useState<string>("")
-  const [output, setOutput] = useState<string[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const waiting = status === 'waiting-input'
 
-  //TODO: get the output from the server
-  const code = output.join("\n")
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({block: 'nearest'})
+  }, [lines])
 
-  const handleEnter = (event: { key: string }) => {
-    if (event.key === 'Enter') {
-      //TODO: logic to send inputs to server
-      setOutput([...output, input])
+  useEffect(() => {
+    if (waiting) inputRef.current?.focus()
+  }, [waiting])
+
+  const handleEnter = (event: KeyboardEvent) => {
+    if (event.key === 'Enter' && waiting) {
+      sendInput(input)
       setInput("")
     }
-  };
+  }
 
-    return (
+  return (
       <>
-        <Bòx flex={1} overflow={"none"} minHeight={200} bgcolor={'black'} color={'white'} code={code}>
-            <Editor
-              value={code}
-              padding={10}
-              onValueChange={(code) => setInput(code)}
-              highlight={(code) => highlight(code, languages.js, 'javascript')}
-              maxLength={1000}
-              style={{
-                  fontFamily: "monospace",
-                  fontSize: 17,
-              }}
-            />
-        </Bòx>
-        <OutlinedInput onKeyDown={handleEnter} value={input} onChange={e => setInput(e.target.value)} placeholder="Type here" fullWidth/>
+        <Box minHeight={minHeight} maxHeight={400} overflow={"auto"} bgcolor={'black'} p={'10px'}
+             fontFamily={"monospace"} fontSize={17} data-testid={"execution-console"}>
+          {lines.length === 0 && status === 'idle' && (
+              <Typography fontFamily={"monospace"} color={COLORS.info}>Press run to see the output here</Typography>
+          )}
+          {lines.map((line, index) => (
+              <Box key={index} color={COLORS[line.kind]} whiteSpace={"pre-wrap"}>
+                {line.kind === 'input' ? `> ${line.text}` : line.text}
+              </Box>
+          ))}
+          {status === 'running' && <Box color={COLORS.info}>…</Box>}
+          <div ref={bottomRef}/>
+        </Box>
+        <OutlinedInput inputRef={inputRef} onKeyDown={handleEnter} value={input} disabled={!waiting}
+                       onChange={e => setInput(e.target.value)} fullWidth
+                       placeholder={waiting ? "Type the input and press Enter" : "The code is not asking for input"}/>
       </>
-    )
+  )
 }
