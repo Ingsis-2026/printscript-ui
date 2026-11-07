@@ -46,10 +46,10 @@ The UI talks to [`snippet-service`](https://github.com/Ingsis-2026/snippet-servi
 | Variable | Default | |
 |---|---|---|
 | `SNIPPET_SERVICE_URL` | `http://localhost:8080` in dev, `http://snippet-service:8080` in Docker | Where `/api` goes. Read when the server starts. |
-| `VITE_USER_ID` | `dev-user` | Who the UI acts as until Auth0 is enabled, sent as `X-User-Id`. Baked into the build. |
+| `VITE_AUTH0_DOMAIN` / `VITE_AUTH0_CLIENT_ID` / `VITE_AUTH0_AUDIENCE` | The development tenant, its "Snippet Searcher UI" app and `https://snippet-searcher/api` | Where users log in, and the API their access token is for. None of them is a secret. Baked into the build. |
 | `VITE_PRINTSCRIPT_VERSION` | `1.1` | The version new snippets are created with. Baked into the build. |
 
-Until Auth0, sharing takes whatever you type in the share dialog as the user id. snippet-service does not support formatting unsaved code, deleting snippets, or editing and removing tests yet: those buttons fail with an error in the console.
+Every page asks for an Auth0 login, and every call to snippet-service carries the user's access token in `Authorization`. Until there is a user list (US7), sharing takes whatever you type in the share dialog as the Auth0 user id (`auth0|...`).
 
 ```bash
 docker build -t printscript-ui .
@@ -74,15 +74,13 @@ To start cypress, make sure that the UI is running and enter:
 npm run cypress
 ```
 
-## Enable Auth0
+## Auth0
 
-This application uses https://www.npmjs.com/package/@auth0/auth0-react library for Auth0 integration, to enable it you need to change:
-* Uncomment autologin in [App.tsx](src/App.tsx)
-* Uncomment token retrieval for operations [queries.tsx](src/utils/queries.tsx) 
-* Create a `.env` file with the required env vars:
+Auth0 is enabled with https://www.npmjs.com/package/@auth0/auth0-react: [App.tsx](src/App.tsx) sends anyone not logged in to Auth0's login page, and [queries.tsx](src/utils/queries.tsx) gives `SnippetServiceOperations` the access token. The domain, client ID and audience default to the development tenant (see the table above), so a `.env` is only needed to point at another tenant:
 ```
 VITE_AUTH0_DOMAIN=<domain>
 VITE_AUTH0_CLIENT_ID=<client_id>
+VITE_AUTH0_AUDIENCE=<API identifier>
 ```
 
 If you get 401 loop when getting token:
