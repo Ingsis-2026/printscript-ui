@@ -11,7 +11,7 @@ import {
 } from "../utils/queries.tsx";
 import {useFormatSnippet, useGetSnippetById, useShareSnippet} from "../utils/queries.tsx";
 import {Bòx} from "../components/snippet-table/SnippetBox.tsx";
-import {BugReport, Delete, Download, Save, Share} from "@mui/icons-material";
+import {BugReport, Delete, Download, PlayArrow, Save, Share, StopRounded} from "@mui/icons-material";
 import {ShareSnippetModal} from "../components/snippet-detail/ShareSnippetModal.tsx";
 import {TestSnippetModal} from "../components/snippet-test/TestSnippetModal.tsx";
 import {Snippet} from "../utils/snippet.ts";
@@ -19,6 +19,7 @@ import {SnippetExecution} from "./SnippetExecution.tsx";
 import ReadMoreIcon from '@mui/icons-material/ReadMore';
 import {queryClient} from "../App.tsx";
 import {DeleteConfirmationModal} from "../components/snippet-detail/DeleteConfirmationModal.tsx";
+import {useExecution} from "../hooks/useExecution.ts";
 
 type SnippetDetailProps = {
   id: string;
@@ -61,6 +62,9 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
   const {mutate: shareSnippet, isLoading: loadingShare} = useShareSnippet()
   const {mutate: formatSnippet, isLoading: isFormatLoading, data: formatSnippetData} = useFormatSnippet(id)
   const {mutate: updateSnippet, isLoading: isUpdateSnippetLoading} = useUpdateSnippetById({onSuccess: () => queryClient.invalidateQueries(['snippet', id])})
+  const execution = useExecution(id)
+  const running = execution.status === 'running' || execution.status === 'waiting-input'
+  const unsaved = snippet !== undefined && snippet.content !== code
 
   useEffect(() => {
     if (snippet) {
@@ -102,12 +106,12 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
                 </IconButton>
               </Tooltip>
               <DownloadButton snippet={snippet}/>
-              {/*<Tooltip title={runSnippet ? "Stop run" : "Run"}>*/}
-              {/*  <IconButton onClick={() => setRunSnippet(!runSnippet)}>*/}
-              {/*    {runSnippet ? <StopRounded/> : <PlayArrow/>}*/}
-              {/*  </IconButton>*/}
-              {/*</Tooltip>*/}
-              {/* TODO: we can implement a live mode*/}
+              {/* US10: runs the saved snippet, asking for each input when the code needs it. */}
+              <Tooltip title={running ? "Stop run" : unsaved ? "Run (the saved version)" : "Run"}>
+                <IconButton onClick={() => running ? execution.stop() : execution.run()}>
+                  {running ? <StopRounded/> : <PlayArrow/>}
+                </IconButton>
+              </Tooltip>
               <Tooltip title={"Format"}>
                 <IconButton onClick={() => formatSnippet(code)} disabled={isFormatLoading}>
                   <ReadMoreIcon />
@@ -142,7 +146,7 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
             </Box>
             <Box pt={1} flex={1} marginTop={2}>
               <Alert severity="info">Output</Alert>
-              <SnippetExecution />
+              <SnippetExecution execution={execution}/>
             </Box>
           </>
         }

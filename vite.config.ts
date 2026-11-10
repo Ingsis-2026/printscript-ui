@@ -16,6 +16,8 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: env.SNIPPET_SERVICE_URL ?? 'http://localhost:8080',
           rewrite: (path) => path.replace(/^\/api/, ''),
+          // /api/execution is a WebSocket (US9 and US10).
+          ws: true,
         },
       },
     },
