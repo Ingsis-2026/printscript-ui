@@ -1,7 +1,8 @@
 import {AppBar, Box, Button, Container, Toolbar, Typography} from "@mui/material";
-import {Code, Rule} from "@mui/icons-material";
+import {Code, Logout, Rule} from "@mui/icons-material";
 import {ReactNode} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
+import {useAuth0} from "@auth0/auth0-react";
 
 type PageType = {
     title: string;
@@ -22,6 +23,7 @@ const pages: PageType[] = [{
 export const Navbar = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const {user, logout} = useAuth0();
     return (
         <AppBar position="static" elevation={0}>
             <Container maxWidth="xl">
@@ -61,6 +63,14 @@ export const Navbar = () => {
                             </Button>
                         ))}
                     </Box>
+                    <Typography noWrap sx={{display: {xs: 'none', md: 'block'}}}>{user?.name}</Typography>
+                    <Button
+                        onClick={() => logout({logoutParams: {returnTo: window.location.origin}})}
+                        sx={{color: 'white', display: 'flex', gap: '4px'}}
+                    >
+                        <Logout/>
+                        <Typography>Log out</Typography>
+                    </Button>
                 </Toolbar>
             </Container>
         </AppBar>

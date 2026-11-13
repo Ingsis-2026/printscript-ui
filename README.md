@@ -39,6 +39,25 @@ npm run dev
 
 This will start the Vite development server. You can now open your browser and navigate to http://localhost:5173/ to see the application running.
 
+## Snippet Searcher backend
+
+The UI talks to [`snippet-service`](https://github.com/Ingsis-2026/snippet-service) through `SnippetServiceOperations` ([snippetServiceOperations.ts](src/utils/snippetServiceOperations.ts)). Every call goes to `/api`: in dev the Vite server proxies it to snippet-service, and in the Docker image nginx does. Neither keeps the `/api` prefix.
+
+| Variable | Default | |
+|---|---|---|
+| `SNIPPET_SERVICE_URL` | `http://localhost:8080` in dev, `http://snippet-service:8080` in Docker | Where `/api` goes. Read when the server starts. |
+| `VITE_AUTH0_DOMAIN` / `VITE_AUTH0_CLIENT_ID` / `VITE_AUTH0_AUDIENCE` | The development tenant, its "Snippet Searcher UI" app and `https://snippet-searcher/api` | Where users log in, and the API their access token is for. None of them is a secret. Baked into the build. |
+| `VITE_PRINTSCRIPT_VERSION` | `1.1` | The version new snippets are created with. Baked into the build. |
+
+Every page asks for an Auth0 login, and every call to snippet-service carries the user's access token in `Authorization`. The share dialog lists the users whose name or email starts with what you type (US7), from snippet-service's `GET /users`.
+
+```bash
+docker build -t printscript-ui .
+docker run -p 5173:80 -e SNIPPET_SERVICE_URL=http://snippet-service:8080 printscript-ui
+```
+
+nginx resolves `SNIPPET_SERVICE_URL` with Docker's DNS, so the container has to run on a Docker network (Compose or Swarm), not the default bridge.
+
 ## Build production version
 
 To use this UI in production you should use an optimized and static version, this command will generate this version in `dist` directory:  
@@ -55,15 +74,13 @@ To start cypress, make sure that the UI is running and enter:
 npm run cypress
 ```
 
-## Enable Auth0
+## Auth0
 
-This application uses https://www.npmjs.com/package/@auth0/auth0-react library for Auth0 integration, to enable it you need to change:
-* Uncomment autologin in [App.tsx](src/App.tsx)
-* Uncomment token retrieval for operations [queries.tsx](src/utils/queries.tsx) 
-* Create a `.env` file with the required env vars:
+Auth0 is enabled with https://www.npmjs.com/package/@auth0/auth0-react: [App.tsx](src/App.tsx) sends anyone not logged in to Auth0's login page, and [queries.tsx](src/utils/queries.tsx) gives `SnippetServiceOperations` the access token. The domain, client ID and audience default to the development tenant (see the table above), so a `.env` is only needed to point at another tenant:
 ```
 VITE_AUTH0_DOMAIN=<domain>
 VITE_AUTH0_CLIENT_ID=<client_id>
+VITE_AUTH0_AUDIENCE=<API identifier>
 ```
 
 If you get 401 loop when getting token:
