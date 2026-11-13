@@ -1,7 +1,16 @@
 import axios, {AxiosInstance} from 'axios'
 import autoBind from 'auto-bind'
-import {SnippetOperations} from './snippetOperations'
-import {ComplianceEnum, CreateSnippet, PaginatedSnippets, Snippet, UpdateSnippet} from './snippet'
+import {SnippetFile, SnippetOperations} from './snippetOperations'
+import {
+  ComplianceEnum,
+  CreateSnippet,
+  DEFAULT_PRINTSCRIPT_VERSION,
+  LintResult,
+  PaginatedSnippets,
+  Snippet,
+  SnippetFilters,
+  UpdateSnippet
+} from './snippet'
 import {PaginatedUsers} from './users.ts'
 import {TestCase} from '../types/TestCase.ts'
 import {TestCaseResult} from './queries.tsx'
@@ -10,8 +19,6 @@ import {Rule} from '../types/Rule.ts'
 
 // In dev, Vite proxies /api to snippet-service; in the Docker image, nginx does.
 export const BACKEND_URL: string = import.meta.env.VITE_BACKEND_URL ?? '/api'
-// The version new snippets are created with: the UI does not ask for one.
-const PRINTSCRIPT_VERSION: string = import.meta.env.VITE_PRINTSCRIPT_VERSION ?? '1.1'
 
 // The shapes snippet-service answers with.
 type SnippetResponse = {
@@ -67,6 +74,13 @@ const COMPLIANCE: Record<SnippetResponse['status'], ComplianceEnum> = {
   INVALID: 'failed',
 }
 
+const STATUS: Record<ComplianceEnum, SnippetResponse['status']> = {
+  'pending': 'PENDING',
+  'compliant': 'COMPLIANT',
+  'not-compliant': 'NOT_COMPLIANT',
+  'failed': 'INVALID',
+}
+
 /**
  * Talks to snippet-service as the logged-in user: every request carries their Auth0 access token,
  * and snippet-service takes the user from it.
@@ -84,20 +98,29 @@ export class SnippetServiceOperations implements SnippetOperations {
     autoBind(this)
   }
 
-  async listSnippetDescriptors(page: number, pageSize: number, snippetName?: string): Promise<PaginatedSnippets> {
+  // US5: filtered by relation, name, language and validity, and sorted by name, language or validity.
+  async listSnippetDescriptors(page: number, pageSize: number, snippetName?: string, filters: SnippetFilters = {}): Promise<PaginatedSnippets> {
     const {data} = await this.client.get<SnippetPage>('/snippets', {
-      params: {page, size: pageSize, name: snippetName || undefined}
+      params: {
+        page,
+        size: pageSize,
+        name: snippetName || undefined,
+        relation: filters.relation,
+        language: filters.language || undefined,
+        status: filters.compliance && STATUS[filters.compliance],
+        sort: filters.sort && `${filters.sort.field},${filters.sort.direction}`,
+      }
     })
     return {page: data.page, page_size: data.size, count: data.total, snippets: data.content.map(toSnippet)}
   }
 
   async createSnippet(createSnippet: CreateSnippet): Promise<Snippet> {
-    // The UI asks for neither a description nor a version.
     const {data} = await this.client.post<SnippetResponse>('/snippets', {
       name: createSnippet.name,
-      description: createSnippet.name,
+      // snippet-service requires a description; without one, the name stands in for it.
+      description: createSnippet.description?.trim() || createSnippet.name,
       language: createSnippet.language,
-      version: PRINTSCRIPT_VERSION,
+      version: createSnippet.version || DEFAULT_PRINTSCRIPT_VERSION,
       content: createSnippet.content,
     })
     return toSnippet(data)
@@ -114,13 +137,13 @@ export class SnippetServiceOperations implements SnippetOperations {
   }
 
   async updateSnippetById(id: string, updateSnippet: UpdateSnippet): Promise<Snippet> {
-    // The update replaces the whole snippet, and the UI only sends the code.
+    // The update replaces the whole snippet: what the UI does not change is sent as it is now.
     const {data: current} = await this.client.get<SnippetResponse>(`/snippets/${id}`)
     const {data} = await this.client.put<SnippetResponse>(`/snippets/${id}`, {
-      name: current.name,
-      description: current.description,
-      language: current.language,
-      version: current.version,
+      name: updateSnippet.name ?? current.name,
+      description: updateSnippet.description ?? current.description,
+      language: updateSnippet.language ?? current.language,
+      version: updateSnippet.version ?? current.version,
       content: updateSnippet.content,
     })
     return toSnippet(data)
@@ -202,6 +225,21 @@ export class SnippetServiceOperations implements SnippetOperations {
     return id
   }
 
+  async getLintErrors(snippetId: string): Promise<LintResult> {
+    const {data} = await this.client.get<LintResult>(`/snippets/${snippetId}/lint`)
+    return data
+  }
+
+  async downloadSnippet(snippetId: string, formatted: boolean): Promise<SnippetFile> {
+    const response = await this.client.get<string>(`/snippets/${snippetId}/download`, {
+      params: {formatted},
+      responseType: 'text',
+      // Keep the code as it is: axios would otherwise try to parse it as JSON.
+      transformResponse: data => data,
+    })
+    return {filename: filenameOf(response.headers['content-disposition']) ?? 'snippet.txt', content: response.data}
+  }
+
   getFileTypes(): Promise<FileType[]> {
     return Promise.resolve(FILE_TYPES)
   }
@@ -221,9 +259,19 @@ export class SnippetServiceOperations implements SnippetOperations {
   }
 }
 
+// The name snippet-service gives the file in Content-Disposition, preferring the UTF-8 one (filename*).
+const filenameOf = (contentDisposition?: string): string | undefined => {
+  if (!contentDisposition) return undefined
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(contentDisposition)
+  if (encoded) return decodeURIComponent(encoded[1])
+  return /filename="?([^";]+)"?/i.exec(contentDisposition)?.[1]
+}
+
 const toSnippet = (snippet: SnippetResponse): Snippet => ({
   id: snippet.id,
   name: snippet.name,
+  description: snippet.description,
+  version: snippet.version,
   content: snippet.content,
   language: snippet.language,
   extension: FILE_TYPES.find(f => f.language === snippet.language)?.extension ?? '',

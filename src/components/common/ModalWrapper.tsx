@@ -15,6 +15,11 @@ export const ModalWrapper = ({open, onClose,children}: { open: boolean, onClose:
           padding: '32px',
           borderRadius: '8px',
           width: '50%',
+          // A tall form (the create one, with its editor) scrolls instead of going past the window.
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          // Without this, the column squeezes its children to fit instead of scrolling.
+          '& > *': {flexShrink: 0},
           display: 'flex',
           flexDirection: 'column',
           gap: '16px'
