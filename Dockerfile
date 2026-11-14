@@ -10,6 +10,12 @@ ARG VITE_AUTH0_DOMAIN=dev-2fvmkxju8g70kqvs.us.auth0.com
 ARG VITE_AUTH0_CLIENT_ID=jAsdmm8OFvuce8C8AFyAWQ8iv648W4gD
 ARG VITE_AUTH0_AUDIENCE=https://snippet-searcher/api
 ARG VITE_PRINTSCRIPT_VERSION=1.1
+# Browser monitoring de New Relic (src/observability/newRelic.ts). Vacíos, el agente no arranca. Los pasa el CD.
+ARG VITE_NEW_RELIC_ACCOUNT_ID=
+ARG VITE_NEW_RELIC_TRUST_KEY=
+ARG VITE_NEW_RELIC_LICENSE_KEY=
+ARG VITE_NEW_RELIC_APPLICATION_ID=
+ARG VITE_NEW_RELIC_ENVIRONMENT=
 RUN npm run build
 
 FROM nginx:1.27-alpine
