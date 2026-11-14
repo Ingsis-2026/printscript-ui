@@ -11,12 +11,15 @@ import {
 import {useGetLintingRules, useModifyLintingRules} from "../../utils/queries.tsx";
 import {queryClient} from "../../App.tsx";
 import {Rule} from "../../types/Rule.ts";
+import {useSnackbarContext} from "../../contexts/snackbarContext.tsx";
+import {toRequestError} from "../../utils/errors.ts";
 
 const LintingRulesList = () => {
   const [rules, setRules] = useState<Rule[] | undefined>([]);
 
   const {data, isLoading} = useGetLintingRules();
-  const {mutateAsync, isLoading: isLoadingMutate} = useModifyLintingRules({
+  const {createSnackbar} = useSnackbarContext()
+  const {mutate, isLoading: isLoadingMutate} = useModifyLintingRules({
     onSuccess: () => queryClient.invalidateQueries('lintingRules')
   })
 
@@ -49,6 +52,15 @@ const LintingRulesList = () => {
       }
     })
     setRules(newRules)
+  }
+
+  // A rule with a wrong value, or two that contradict each other, are not saved: snippet-service says why.
+  // What was changed stays on screen to fix it.
+  const handleSave = () => {
+    mutate(rules ?? [], {
+      onSuccess: () => createSnackbar('success', 'Linting rules saved'),
+      onError: e => createSnackbar('error', `Could not save the linting rules: ${toRequestError(e).message}`),
+    })
   }
 
   return (
@@ -88,7 +100,7 @@ const LintingRulesList = () => {
           )
         })}
       </List>
-      <Button disabled={isLoading} variant={"contained"} onClick={() => mutateAsync(rules ?? [])}>Save</Button>
+      <Button disabled={isLoading || isLoadingMutate} variant={"contained"} onClick={handleSave}>Save</Button>
     </Card>
 
   );

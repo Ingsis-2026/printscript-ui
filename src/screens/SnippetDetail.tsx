@@ -31,6 +31,10 @@ import {useSnackbarContext} from "../contexts/snackbarContext.tsx";
 import {RequestError, toRequestError} from "../utils/errors.ts";
 import {CodeErrorsAlert} from "../components/common/CodeErrorsAlert.tsx";
 import {EditSnippetDetailsModal} from "../components/snippet-detail/EditSnippetDetailsModal.tsx";
+import {TestResultsSummary} from "../components/snippet-test/TestStatus.tsx";
+
+// US16: how long to keep asking for the test results after a save, while any is still pending.
+const TEST_RESULTS_WAIT_MS = 30_000
 
 type SnippetDetailProps = {
   id: string;
@@ -97,9 +101,17 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
   const [testModalOpened, setTestModalOpened] = useState(false);
   const [editModalOpened, setEditModalOpened] = useState(false);
   const [saveError, setSaveError] = useState<RequestError | undefined>()
+  // US16: until when to keep asking for the tests that snippet-service runs after a save.
+  const [testsPollUntil, setTestsPollUntil] = useState<number | undefined>()
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {createSnackbar} = useSnackbarContext()
   const {user} = useAuth0()
+
+  // US16: saving the snippet runs all its tests; their results come in a bit later.
+  const watchTests = () => {
+    setTestsPollUntil(Date.now() + TEST_RESULTS_WAIT_MS)
+    queryClient.invalidateQueries(['testCases', id])
+  }
 
   const {data: snippet, isLoading} = useGetSnippetById(id);
   const {mutate: shareSnippet, isLoading: loadingShare} = useShareSnippet()
@@ -110,6 +122,7 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
       queryClient.invalidateQueries(['snippet', id])
       queryClient.invalidateQueries(['lintErrors', id])
       queryClient.invalidateQueries('listSnippets')
+      watchTests()
     }
   })
   const execution = useExecution(id)
@@ -268,6 +281,7 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
             <Box marginTop={2}>
               <LintResultAlert snippetId={id} unsaved={unsaved}/>
             </Box>
+            <TestResultsSummary snippetId={id} pollUntil={testsPollUntil}/>
             <Box pt={1} flex={1} marginTop={2}>
               <Alert severity="info">Output</Alert>
               <SnippetExecution execution={execution}/>
@@ -277,7 +291,8 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
         <ShareSnippetModal loading={loadingShare || isLoading} open={shareModalOppened}
                            onClose={() => setShareModalOppened(false)}
                            onShare={handleShareSnippet}/>
-        {snippet && <EditSnippetDetailsModal open={editModalOpened} onClose={() => setEditModalOpened(false)} snippet={snippet}/>}
+        {snippet && <EditSnippetDetailsModal open={editModalOpened} onClose={() => setEditModalOpened(false)} snippet={snippet}
+                                               onSaved={watchTests}/>}
         <TestSnippetModal snippetId={id} open={testModalOpened} onClose={() => setTestModalOpened(false)}/>
         <DeleteConfirmationModal open={deleteConfirmationModalOpen} onClose={() => setDeleteConfirmationModalOpen(false)} id={snippet?.id ?? ""} setCloseDetails={handleCloseModal} />
       </Box>

@@ -21,6 +21,7 @@ import {useRef, useState} from "react";
 import {Add, Search} from "@mui/icons-material";
 import {LoadingSnippetRow, SnippetRow} from "./SnippetRow.tsx";
 import {
+  COMPLIANCE_INFO,
   ComplianceEnum,
   CreateSnippetWithLang,
   getFileLanguage,
@@ -48,12 +49,7 @@ const RELATIONS: {value: SnippetRelation, label: string}[] = [
   {value: 'SHARED', label: 'Shared with me'},
 ]
 
-const COMPLIANCES: {value: ComplianceEnum, label: string}[] = [
-  {value: 'compliant', label: 'Compliant'},
-  {value: 'not-compliant', label: 'Not compliant'},
-  {value: 'pending', label: 'Pending'},
-  {value: 'failed', label: 'Invalid'},
-]
+const COMPLIANCES: ComplianceEnum[] = ['compliant', 'not-compliant', 'pending', 'failed', 'error']
 
 // What the list is sorted by when nobody picked anything: snippet-service sorts by name.
 const DEFAULT_SORT = {field: 'name', direction: 'asc'} as const
@@ -155,7 +151,7 @@ export const SnippetTable = (props: SnippetTableProps) => {
                   inputProps={{'aria-label': 'conformance'}}
                   onChange={e => onChangeFilters({...filters, compliance: (e.target.value || undefined) as ComplianceEnum | undefined})}>
             <MenuItem value="">Any conformance</MenuItem>
-            {COMPLIANCES.map(c => <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>)}
+            {COMPLIANCES.map(c => <MenuItem key={c} value={c}>{COMPLIANCE_INFO[c].label}</MenuItem>)}
           </Select>
         </Stack>
         <Table size="medium" sx={{borderSpacing: "0 10px", borderCollapse: "separate"}}>

@@ -4,6 +4,7 @@ import {SyntheticEvent, useState} from "react";
 import {AddRounded} from "@mui/icons-material";
 import {useGetTestCases, usePostTestCase, useRemoveTestCase} from "../../utils/queries.tsx";
 import {TabPanel} from "./TabPanel.tsx";
+import {TestStatusIcon} from "./TestStatus.tsx";
 import {queryClient} from "../../App.tsx";
 
 type TestSnippetModalProps = {
@@ -40,15 +41,17 @@ export const TestSnippetModal = ({snippetId, open, onClose}: TestSnippetModalPro
                     aria-label="Vertical tabs example"
                     sx={{borderRight: 1, borderColor: 'divider'}}
                 >
+                    {/* US16: each test shows how it did the last time it ran. */}
                     {testCases?.map((testCase) => (
-                        <Tab label={testCase.name}/>
+                        <Tab key={testCase.id} label={testCase.name} icon={<TestStatusIcon status={testCase.status}/>}
+                             iconPosition="end" sx={{minHeight: 48, justifyContent: 'space-between'}}/>
                     ))}
                     <IconButton disableRipple onClick={() => setValue((testCases?.length ?? 0) + 1)}>
                         <AddRounded />
                     </IconButton>
                 </Tabs>
                 {testCases?.map((testCase, index) => (
-                    <TabPanel snippetId={snippetId} index={index} value={value} test={testCase}
+                    <TabPanel key={testCase.id} snippetId={snippetId} index={index} value={value} test={testCase}
                               setTestCase={(tc) => postTestCase(tc)}
                               removeTestCase={(i) => removeTestCase(i)}
                     />

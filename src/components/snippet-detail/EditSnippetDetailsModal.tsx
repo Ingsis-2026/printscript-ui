@@ -12,10 +12,12 @@ import {queryClient} from "../../App.tsx";
  * unchanged, so what is in the editor and not saved yet stays unsaved. A new version can make the
  * code invalid: then nothing is saved and the rules it breaks are shown.
  */
-export const EditSnippetDetailsModal = ({open, onClose, snippet}: {
+export const EditSnippetDetailsModal = ({open, onClose, snippet, onSaved}: {
   open: boolean,
   onClose: () => void,
   snippet: Snippet,
+  // Saving runs the snippet's tests again (US16).
+  onSaved?: () => void,
 }) => {
   const [name, setName] = useState(snippet.name)
   const [description, setDescription] = useState(snippet.description ?? "")
@@ -26,6 +28,7 @@ export const EditSnippetDetailsModal = ({open, onClose, snippet}: {
       queryClient.invalidateQueries(['snippet', snippet.id])
       queryClient.invalidateQueries(['lintErrors', snippet.id])
       queryClient.invalidateQueries('listSnippets')
+      onSaved?.()
     }
   })
 

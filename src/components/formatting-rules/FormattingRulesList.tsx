@@ -11,12 +11,15 @@ import {
 import {useGetFormatRules, useModifyFormatRules} from "../../utils/queries.tsx";
 import {queryClient} from "../../App.tsx";
 import {Rule} from "../../types/Rule.ts";
+import {useSnackbarContext} from "../../contexts/snackbarContext.tsx";
+import {toRequestError} from "../../utils/errors.ts";
 
 const FormattingRulesList = () => {
   const [rules, setRules] = useState<Rule[] | undefined>([]);
 
   const {data, isLoading} = useGetFormatRules();
-  const {mutateAsync, isLoading: isLoadingMutate} = useModifyFormatRules({
+  const {createSnackbar} = useSnackbarContext()
+  const {mutate, isLoading: isLoadingMutate} = useModifyFormatRules({
     onSuccess: () => queryClient.invalidateQueries('formatRules')
   })
 
@@ -49,6 +52,15 @@ const FormattingRulesList = () => {
       }
     })
     setRules(newRules)
+  }
+
+  // A rule with a wrong value, or two that contradict each other, are not saved: snippet-service says why.
+  // What was changed stays on screen to fix it.
+  const handleSave = () => {
+    mutate(rules ?? [], {
+      onSuccess: () => createSnackbar('success', 'Formatting rules saved'),
+      onError: e => createSnackbar('error', `Could not save the formatting rules: ${toRequestError(e).message}`),
+    })
   }
 
   return (
@@ -88,7 +100,7 @@ const FormattingRulesList = () => {
           )
         })}
       </List>
-      <Button disabled={isLoading} variant={"contained"} onClick={() => mutateAsync(rules ?? [])}>Save</Button>
+      <Button disabled={isLoading || isLoadingMutate} variant={"contained"} onClick={handleSave}>Save</Button>
     </Card>
 
   );

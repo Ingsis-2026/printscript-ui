@@ -5,7 +5,22 @@ export type ComplianceEnum =
     'pending' |
     'failed' |
     'not-compliant' |
-    'compliant'
+    'compliant' |
+    // It could not be checked: snippet-service gave up linting or validating it after several retries.
+    'error'
+
+// How each validity shows in the list, and what it means.
+export const COMPLIANCE_INFO: Record<ComplianceEnum, {
+  label: string,
+  description: string,
+  color: 'default' | 'success' | 'warning' | 'error' | 'info'
+}> = {
+  'compliant': {label: 'Compliant', description: 'Follows all the lint rules', color: 'success'},
+  'not-compliant': {label: 'Not compliant', description: 'Breaks some lint rules', color: 'warning'},
+  'pending': {label: 'Pending', description: 'Still being checked', color: 'default'},
+  'failed': {label: 'Invalid', description: 'The current parser no longer accepts it', color: 'error'},
+  'error': {label: 'Could not check', description: 'Checking it was given up after several retries', color: 'info'},
+}
 
 
 export type CreateSnippet = {
