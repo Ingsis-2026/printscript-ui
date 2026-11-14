@@ -12,7 +12,7 @@ export type SnackbarContextType = {
 }
 
 
-// @ts-expect-error
+// @ts-expect-error: sin provider no hay valor; todos los componentes se montan adentro del provider, que siempre lo pasa
 export const SnackbarContext = createContext<SnackbarContextType>(null)
 
 export const useSnackbarContext = (): SnackbarContextType => useContext(SnackbarContext)
