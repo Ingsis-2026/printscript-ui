@@ -83,6 +83,8 @@ VITE_AUTH0_CLIENT_ID=<client_id>
 VITE_AUTH0_AUDIENCE=<API identifier>
 ```
 
+The UI asks for the scopes `read:snippets` and `write:snippets` (besides `openid profile email`), which snippet-service requires: they are set once in `authorizationParams` ([main.tsx](src/main.tsx)) and every `getAccessTokenSilently` uses them. The API in Auth0 must define both permissions; Auth0 drops requested scopes the API doesn't have. On `localhost` Auth0 always asks for consent, so after the scopes change a silent token request fails with `consent_required` until you log out and log in again.
+
 If you get 401 loop when getting token:
 * Change application type in Auth0 to "Regular Web Application"
 * In Application Settings > Credentials > "Authentication Method" select "None" 
