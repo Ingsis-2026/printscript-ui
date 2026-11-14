@@ -70,10 +70,24 @@ export const useShareSnippet = () => {
 };
 
 
-export const useGetTestCases = (snippetId: string) => {
+// How often the tests are asked for again while snippet-service is still running them.
+const TEST_POLL_INTERVAL_MS = 2000
+
+/**
+ * US16: until pollUntil (a timestamp), the tests are asked for again every couple of seconds while
+ * any is still pending: snippet-service runs them on its own after the snippet is saved. A test that
+ * was never run stays pending too, hence the deadline.
+ */
+export const useGetTestCases = (snippetId: string, pollUntil?: number) => {
   const snippetOperations = useSnippetsOperations()
 
-  return useQuery<TestCase[] | undefined, Error>(['testCases', snippetId], () => snippetOperations.getTestCases(snippetId), {});
+  return useQuery<TestCase[] | undefined, Error>(['testCases', snippetId], () => snippetOperations.getTestCases(snippetId), {
+    enabled: !!snippetId,
+    refetchInterval: data =>
+        pollUntil !== undefined && Date.now() < pollUntil && !!data?.some(test => test.status === 'pending')
+            ? TEST_POLL_INTERVAL_MS
+            : false,
+  });
 };
 
 

@@ -1,9 +1,11 @@
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {TestCase} from "../../types/TestCase.ts";
 import {Autocomplete, Box, Button, Chip, TextField, Typography} from "@mui/material";
 import {BugReport, Delete, Save} from "@mui/icons-material";
 import {useExecution} from "../../hooks/useExecution.ts";
 import {SnippetExecution} from "../../screens/SnippetExecution.tsx";
+import {queryClient} from "../../App.tsx";
+import {TestStatusChip} from "./TestStatus.tsx";
 
 type TabPanelProps = {
     snippetId: string;
@@ -21,6 +23,10 @@ export const TabPanel = ({snippetId, value, index, test: initialTest, setTestCas
     const execution = useExecution(snippetId);
     const running = execution.status === 'running';
 
+    // US16: snippet-service keeps the result of the run in the test, so the list shows it from now on.
+    useEffect(() => {
+        if (execution.status === 'finished') queryClient.invalidateQueries(['testCases', snippetId])
+    }, [execution.status, snippetId]);
 
     return (
         <div
@@ -32,6 +38,12 @@ export const TabPanel = ({snippetId, value, index, test: initialTest, setTestCas
         >
             {value === index && (
                 <Box sx={{px: 3}} display="flex" flexDirection="column" gap={2}>
+                    {initialTest?.status && (
+                        <Box display="flex" alignItems="center" gap={1}>
+                            <Typography fontWeight="bold">Last result</Typography>
+                            <TestStatusChip status={initialTest.status}/>
+                        </Box>
+                    )}
                     <Box display="flex" flexDirection="column" gap={1}>
                         <Typography fontWeight="bold">Name</Typography>
                         <TextField size="small" value={testData?.name}
