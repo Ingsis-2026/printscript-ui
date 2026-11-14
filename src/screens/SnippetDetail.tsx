@@ -67,13 +67,13 @@ const DownloadButton = ({snippet}: { snippet?: Snippet }) => {
   return (
     <>
       <Tooltip title={"Download"}>
-        <IconButton ref={anchorRef} onClick={() => setMenuOpen(true)} disabled={isLoading}>
+        <IconButton ref={anchorRef} onClick={() => setMenuOpen(true)} disabled={isLoading} data-testid={"download-button"}>
           {isLoading ? <CircularProgress size={24}/> : <Download/>}
         </IconButton>
       </Tooltip>
       <Menu anchorEl={anchorRef.current} open={menuOpen} onClose={() => setMenuOpen(false)}>
-        <MenuItem onClick={() => handleDownload(false)}>Original</MenuItem>
-        <MenuItem onClick={() => handleDownload(true)}>Formatted</MenuItem>
+        <MenuItem onClick={() => handleDownload(false)} data-testid={"download-original"}>Original</MenuItem>
+        <MenuItem onClick={() => handleDownload(true)} data-testid={"download-formatted"}>Formatted</MenuItem>
       </Menu>
     </>
   )
@@ -200,20 +200,20 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
             <Box display="flex" flexDirection="row" gap="8px" padding="8px">
               {isOwner && (
                   <Tooltip title={"Share"}>
-                    <IconButton onClick={() => setShareModalOppened(true)}>
+                    <IconButton onClick={() => setShareModalOppened(true)} data-testid={"share-button"}>
                       <Share/>
                     </IconButton>
                   </Tooltip>
               )}
               {isOwner && (
                   <Tooltip title={"Edit details"}>
-                    <IconButton onClick={() => setEditModalOpened(true)}>
+                    <IconButton onClick={() => setEditModalOpened(true)} data-testid={"edit-details-button"}>
                       <Edit/>
                     </IconButton>
                   </Tooltip>
               )}
               <Tooltip title={"Test"}>
-                <IconButton onClick={() => setTestModalOpened(true)}>
+                <IconButton onClick={() => setTestModalOpened(true)} data-testid={"test-button"}>
                   <BugReport/>
                 </IconButton>
               </Tooltip>
@@ -225,7 +225,7 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
                 </IconButton>
               </Tooltip>
               <Tooltip title={"Format"}>
-                <IconButton onClick={handleFormat} disabled={isFormatLoading}>
+                <IconButton onClick={handleFormat} disabled={isFormatLoading} data-testid={"format-button"}>
                   <ReadMoreIcon />
                 </IconButton>
               </Tooltip>
@@ -238,7 +238,7 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
               )}
               {isOwner && (
                   <Tooltip title={"Save changes"}>
-                    <IconButton color={"primary"} onClick={handleSave} disabled={isUpdateSnippetLoading || snippet?.content === code} >
+                    <IconButton color={"primary"} onClick={handleSave} disabled={isUpdateSnippetLoading || snippet?.content === code} data-testid={"save-button"}>
                       <Save />
                     </IconButton>
                   </Tooltip>
@@ -269,6 +269,7 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
                     padding={10}
                     onValueChange={(code) => setCode(code)}
                     highlight={(code) => highlight(code, languages.js, "javascript")}
+                    data-testid={"snippet-editor"}
                     maxLength={1000}
                     style={{
                       minHeight: "500px",
@@ -278,7 +279,7 @@ export const SnippetDetail = (props: SnippetDetailProps) => {
                 />
               </Bòx>
             </Box>
-            <Box marginTop={2}>
+            <Box marginTop={2} data-testid={"lint-result"}>
               <LintResultAlert snippetId={id} unsaved={unsaved}/>
             </Box>
             <TestResultsSummary snippetId={id} pollUntil={testsPollUntil}/>

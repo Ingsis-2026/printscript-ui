@@ -64,7 +64,7 @@ const LintingRulesList = () => {
   }
 
   return (
-    <Card style={{padding: 16, margin: 16}}>
+    <Card style={{padding: 16, margin: 16}} data-testid={"linting-rules"}>
       <Typography variant={"h6"}>Linting rules</Typography>
       <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
         {
@@ -73,6 +73,7 @@ const LintingRulesList = () => {
           return (
             <ListItem
               key={rule.name}
+              data-testid={`rule-${rule.name}`}
               disablePadding
               style={{height: 40}}
             >

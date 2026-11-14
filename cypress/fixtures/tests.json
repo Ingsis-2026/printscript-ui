@@ -1,0 +1,23 @@
+[
+  {
+    "id": "a1d7e0c2-5b3f-4e8a-8c21-000000000001",
+    "name": "prints hello",
+    "inputs": [],
+    "outputs": ["hello"],
+    "status": "PASSED"
+  },
+  {
+    "id": "a1d7e0c2-5b3f-4e8a-8c21-000000000002",
+    "name": "prints bye",
+    "inputs": [],
+    "outputs": ["bye"],
+    "status": "FAILED"
+  },
+  {
+    "id": "a1d7e0c2-5b3f-4e8a-8c21-000000000003",
+    "name": "reads a name",
+    "inputs": ["Ana"],
+    "outputs": ["Hola Ana"],
+    "status": "PENDING"
+  }
+]
