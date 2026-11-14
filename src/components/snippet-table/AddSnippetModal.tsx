@@ -18,7 +18,14 @@ import "prismjs/components/prism-clike";
 import "prismjs/components/prism-javascript";
 import "prismjs/themes/prism-okaidia.css";
 import {Save} from "@mui/icons-material";
-import {CreateSnippet, CreateSnippetWithLang} from "../../utils/snippet.ts";
+import {
+    CreateSnippet,
+    CreateSnippetWithLang,
+    DEFAULT_PRINTSCRIPT_VERSION,
+    PRINTSCRIPT_VERSIONS
+} from "../../utils/snippet.ts";
+import {RequestError, toRequestError} from "../../utils/errors.ts";
+import {CodeErrorsAlert} from "../common/CodeErrorsAlert.tsx";
 import {ModalWrapper} from "../common/ModalWrapper.tsx";
 import {useCreateSnippet, useGetFileTypes} from "../../utils/queries.tsx";
 import {queryClient} from "../../App.tsx";
@@ -31,6 +38,9 @@ export const AddSnippetModal = ({open, onClose, defaultSnippet}: {
     const [language, setLanguage] = useState(defaultSnippet?.language ?? "printscript");
     const [code, setCode] = useState(defaultSnippet?.content ?? "");
     const [snippetName, setSnippetName] = useState(defaultSnippet?.name ?? "")
+    const [description, setDescription] = useState(defaultSnippet?.description ?? "")
+    const [version, setVersion] = useState(defaultSnippet?.version ?? DEFAULT_PRINTSCRIPT_VERSION)
+    const [error, setError] = useState<RequestError | undefined>()
     const {mutateAsync: createSnippet, isLoading: loadingSnippet} = useCreateSnippet({
         onSuccess: () => queryClient.invalidateQueries('listSnippets')
     })
@@ -41,10 +51,24 @@ export const AddSnippetModal = ({open, onClose, defaultSnippet}: {
             name: snippetName,
             content: code,
             language: language,
-            extension: fileTypes?.find((f) => f.language === language)?.extension ?? "prs"
+            extension: fileTypes?.find((f) => f.language === language)?.extension ?? "prs",
+            description,
+            version,
         }
-        await createSnippet(newSnippet);
-        onClose();
+        setError(undefined)
+        try {
+            await createSnippet(newSnippet);
+        } catch (e) {
+            // US1: the snippet is not saved; the modal stays open with the rules the code breaks.
+            setError(toRequestError(e))
+            return
+        }
+        handleClose();
+    }
+
+    const handleClose = () => {
+        setError(undefined)
+        onClose()
     }
 
     useEffect(() => {
@@ -52,11 +76,14 @@ export const AddSnippetModal = ({open, onClose, defaultSnippet}: {
             setCode(defaultSnippet?.content)
             setLanguage(defaultSnippet?.language)
             setSnippetName(defaultSnippet?.name)
+            setDescription(defaultSnippet?.description ?? "")
+            setVersion(defaultSnippet?.version ?? DEFAULT_PRINTSCRIPT_VERSION)
+            setError(undefined)
         }
     }, [defaultSnippet]);
 
     return (
-        <ModalWrapper open={open} onClose={onClose}>
+        <ModalWrapper open={open} onClose={handleClose}>
             {
                 <Box sx={{display: 'flex', flexDirection: "row", justifyContent: "space-between"}}>
                     <Typography id="modal-modal-title" variant="h5" component="h2"
@@ -87,7 +114,16 @@ export const AddSnippetModal = ({open, onClose, defaultSnippet}: {
                 flexDirection: 'column',
                 gap: '16px'
             }}>
-                <InputLabel htmlFor="name">Language</InputLabel>
+                <InputLabel htmlFor="description">Description</InputLabel>
+                <Input onChange={e => setDescription(e.target.value)} value={description} id="description"
+                       placeholder={"Optional: the name is used if left empty"} multiline sx={{width: '100%'}}/>
+            </Box>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+            }}>
+                <InputLabel htmlFor="demo-simple-select">Language</InputLabel>
                 <Select
                     labelId="demo-simple-select-label"
                     id="demo-simple-select"
@@ -104,6 +140,28 @@ export const AddSnippetModal = ({open, onClose, defaultSnippet}: {
                     }
                 </Select>
             </Box>
+            <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px'
+            }}>
+                <InputLabel htmlFor="version-select">Version</InputLabel>
+                <Select
+                    id="version-select"
+                    value={version}
+                    onChange={(e: SelectChangeEvent<string>) => setVersion(e.target.value)}
+                    sx={{width: '50%'}}
+                >
+                    {PRINTSCRIPT_VERSIONS.map(v => <MenuItem key={v} value={v}>{v}</MenuItem>)}
+                </Select>
+            </Box>
+            {error && (
+                <CodeErrorsAlert
+                    title={error.codeErrors.length ? "The snippet breaks the language rules" : error.message}
+                    errors={error.codeErrors}
+                    onClose={() => setError(undefined)}
+                />
+            )}
             <InputLabel>Code Snippet</InputLabel>
             <Box width={"100%"} sx={{
                 backgroundColor: 'black', color: 'white', borderRadius: "8px",

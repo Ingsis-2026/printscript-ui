@@ -5,19 +5,30 @@ import {
   InputBase,
   Menu,
   MenuItem,
+  Select,
+  Stack,
   styled,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TablePagination,
-  TableRow
+  TableRow,
+  TableSortLabel
 } from "@mui/material";
 import {AddSnippetModal} from "./AddSnippetModal.tsx";
 import {useRef, useState} from "react";
 import {Add, Search} from "@mui/icons-material";
 import {LoadingSnippetRow, SnippetRow} from "./SnippetRow.tsx";
-import {CreateSnippetWithLang, getFileLanguage, Snippet} from "../../utils/snippet.ts";
+import {
+  ComplianceEnum,
+  CreateSnippetWithLang,
+  getFileLanguage,
+  Snippet,
+  SnippetFilters,
+  SnippetRelation,
+  SnippetSortField
+} from "../../utils/snippet.ts";
 import {usePaginationContext} from "../../contexts/paginationContext.tsx";
 import {useSnackbarContext} from "../../contexts/snackbarContext.tsx";
 import {useGetFileTypes} from "../../utils/queries.tsx";
@@ -27,10 +38,29 @@ type SnippetTableProps = {
   snippets?: Snippet[];
   loading: boolean;
   handleSearchSnippet: (snippetName: string) => void;
+  filters: SnippetFilters;
+  onChangeFilters: (filters: SnippetFilters) => void;
 }
 
+const RELATIONS: {value: SnippetRelation, label: string}[] = [
+  {value: 'ALL', label: 'All snippets'},
+  {value: 'OWNER', label: 'Mine'},
+  {value: 'SHARED', label: 'Shared with me'},
+]
+
+const COMPLIANCES: {value: ComplianceEnum, label: string}[] = [
+  {value: 'compliant', label: 'Compliant'},
+  {value: 'not-compliant', label: 'Not compliant'},
+  {value: 'pending', label: 'Pending'},
+  {value: 'failed', label: 'Invalid'},
+]
+
+// What the list is sorted by when nobody picked anything: snippet-service sorts by name.
+const DEFAULT_SORT = {field: 'name', direction: 'asc'} as const
+
 export const SnippetTable = (props: SnippetTableProps) => {
-  const {snippets, handleClickSnippet, loading,handleSearchSnippet} = props;
+  const {snippets, handleClickSnippet, loading, handleSearchSnippet, filters, onChangeFilters} = props;
+  const sort = filters.sort ?? DEFAULT_SORT
   const [addModalOpened, setAddModalOpened] = useState(false);
   const [popoverMenuOpened, setPopoverMenuOpened] = useState(false)
   const [snippet, setSnippet] = useState<CreateSnippetWithLang | undefined>()
@@ -73,13 +103,28 @@ export const SnippetTable = (props: SnippetTableProps) => {
     setPopoverMenuOpened(false)
   }
 
+  // US5: clicking the column sorted by flips the direction; clicking another sorts by it, ascending.
+  function handleSort(field: SnippetSortField) {
+    const direction = sort.field === field && sort.direction === 'asc' ? 'desc' : 'asc'
+    onChangeFilters({...filters, sort: {field, direction}})
+  }
+
+  const sortableHeader = (field: SnippetSortField, label: string) => (
+      <StyledTableCell sx={{fontWeight: "bold"}} sortDirection={sort.field === field ? sort.direction : false}>
+        <TableSortLabel active={sort.field === field} direction={sort.field === field ? sort.direction : 'asc'}
+                        onClick={() => handleSort(field)}>
+          {label}
+        </TableSortLabel>
+      </StyledTableCell>
+  )
+
   return (
       <>
         <Box display="flex" flexDirection="row" justifyContent="space-between">
           <Box sx={{background: 'white', width: '30%', display: 'flex'}}>
             <InputBase
                 sx={{ml: 1, flex: 1}}
-                placeholder="Search FileType"
+                placeholder="Search by name"
                 inputProps={{'aria-label': 'search'}}
                 onChange={e => handleSearchSnippet(e.target.value)}
             />
@@ -93,13 +138,33 @@ export const SnippetTable = (props: SnippetTableProps) => {
             Add Snippet
           </Button>
         </Box>
+        {/* US5: which snippets to see, by relation, language and validity. */}
+        <Stack direction="row" gap={2} mt={2} flexWrap="wrap">
+          <Select size="small" value={filters.relation ?? 'ALL'} sx={{background: 'white', minWidth: 170}}
+                  inputProps={{'aria-label': 'relation', 'data-testid': 'relation-filter'}}
+                  onChange={e => onChangeFilters({...filters, relation: e.target.value as SnippetRelation})}>
+            {RELATIONS.map(r => <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>)}
+          </Select>
+          <Select size="small" value={filters.language ?? ''} displayEmpty sx={{background: 'white', minWidth: 170}}
+                  inputProps={{'aria-label': 'language'}}
+                  onChange={e => onChangeFilters({...filters, language: e.target.value || undefined})}>
+            <MenuItem value="">Any language</MenuItem>
+            {fileTypes?.map(f => <MenuItem key={f.language} value={f.language}>{f.language}</MenuItem>)}
+          </Select>
+          <Select size="small" value={filters.compliance ?? ''} displayEmpty sx={{background: 'white', minWidth: 170}}
+                  inputProps={{'aria-label': 'conformance'}}
+                  onChange={e => onChangeFilters({...filters, compliance: (e.target.value || undefined) as ComplianceEnum | undefined})}>
+            <MenuItem value="">Any conformance</MenuItem>
+            {COMPLIANCES.map(c => <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>)}
+          </Select>
+        </Stack>
         <Table size="medium" sx={{borderSpacing: "0 10px", borderCollapse: "separate"}}>
           <TableHead>
             <TableRow sx={{fontWeight: 'bold'}}>
-              <StyledTableCell sx={{fontWeight: "bold"}}>Name</StyledTableCell>
-              <StyledTableCell sx={{fontWeight: "bold"}}>Language</StyledTableCell>
+              {sortableHeader('name', 'Name')}
+              {sortableHeader('language', 'Language')}
               <StyledTableCell sx={{fontWeight: "bold"}}>Author</StyledTableCell>
-              <StyledTableCell sx={{fontWeight: "bold"}}>Conformance</StyledTableCell>
+              {sortableHeader('status', 'Conformance')}
             </TableRow>
           </TableHead>
           <TableBody>{
