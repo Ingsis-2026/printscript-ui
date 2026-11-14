@@ -89,6 +89,20 @@ If you get 401 loop when getting token:
 * Change application type in Auth0 to "Regular Web Application"
 * In Application Settings > Credentials > "Authentication Method" select "None" 
 
+## New Relic browser monitoring
+
+[newRelic.ts](src/observability/newRelic.ts) starts the New Relic browser agent (`@newrelic/browser-agent`) before React mounts: page loads, JavaScript errors, the calls to `/api` (with distributed tracing, so a snippet-service trace starts in the browser) and route changes. Every event carries an `environment` attribute. Without an application ID and license key it does nothing, not even download the agent, so local development reports nothing.
+
+| Build variable | GitHub variable (repository) | Terraform output (`infra/newrelic`) |
+|---|---|---|
+| `VITE_NEW_RELIC_ACCOUNT_ID` | `NEW_RELIC_ACCOUNT_ID` | `browser_account_id` |
+| `VITE_NEW_RELIC_TRUST_KEY` | `NEW_RELIC_TRUST_KEY` | `browser_trust_key` |
+| `VITE_NEW_RELIC_LICENSE_KEY` | `NEW_RELIC_BROWSER_LICENSE_KEY` | `browser_license_key` |
+| `VITE_NEW_RELIC_APPLICATION_ID` | `NEW_RELIC_BROWSER_APPLICATION_ID_DEV` / `NEW_RELIC_BROWSER_APPLICATION_ID_PROD` | `browser_application_id` of each workspace |
+| `VITE_NEW_RELIC_ENVIRONMENT` | — (the CD passes `dev` or `prod`) | — |
+
+They are baked into the build like the Auth0 ones: the Dockerfile takes them as `ARG` and the CD passes them as build args. They are **variables, not secrets**: the browser license key is public by design, it ships to every browser. They are repository variables (not environment variables) because the image job doesn't use a GitHub environment; dev and prod share the New Relic account, only the application changes. `infra/newrelic` prints them all, with these names, as the `browser_github_variables` output. To try the agent locally, put the `VITE_NEW_RELIC_*` values in a `.env.local`.
+
 ## Start working
 
 1. Fork the Project

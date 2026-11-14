@@ -5,6 +5,10 @@ import {createRoot} from "react-dom/client";
 import {PaginationProvider} from "./contexts/paginationProvider.tsx";
 import {SnackbarProvider} from "./contexts/snackbarProvider.tsx";
 import {Auth0Provider} from "@auth0/auth0-react";
+import {startNewRelic} from "./observability/newRelic.ts";
+
+// Antes de montar React, para que el agente vea la carga y los primeros pedidos. Sin configuración no hace nada.
+void startNewRelic()
 
 createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
