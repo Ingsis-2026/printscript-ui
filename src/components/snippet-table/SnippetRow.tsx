@@ -1,6 +1,6 @@
-import {alpha, Skeleton, styled, TableRow, TableRowProps} from "@mui/material";
+import {alpha, Chip, Skeleton, styled, TableRow, TableRowProps, Tooltip} from "@mui/material";
 import {StyledTableCell} from "./SnippetTable.tsx";
-import {Snippet} from "../../utils/snippet.ts";
+import {COMPLIANCE_INFO, ComplianceEnum, Snippet} from "../../utils/snippet.ts";
 
 const StyledTableRow = styled(TableRow)(({theme}) => ({
   backgroundColor: 'white',
@@ -34,14 +34,23 @@ const StyledTableRow = styled(TableRow)(({theme}) => ({
   },
 }));
 
+// Whether the snippet follows its owner's lint rules, or why that is not known.
+const ComplianceChip = ({compliance}: { compliance: ComplianceEnum }) => {
+  const {label, description, color} = COMPLIANCE_INFO[compliance]
+  return (
+      <Tooltip title={description}>
+        <Chip size="small" label={label} color={color} data-testid={"snippet-compliance"}/>
+      </Tooltip>
+  )
+}
 
-export const SnippetRow = ({snippet, onClick, ...props}: { snippet: Snippet, onClick: () => void } & TableRowProps) => {
+export const SnippetRow =({snippet, onClick, ...props}: { snippet: Snippet, onClick: () => void } & TableRowProps) => {
   return (
       <StyledTableRow onClick={onClick} sx={{backgroundColor: 'white', border: 0, height: '75px'}} {...props}>
         <StyledTableCell>{snippet.name}</StyledTableCell>
         <StyledTableCell>{snippet.language}</StyledTableCell>
         <StyledTableCell>{snippet.author}</StyledTableCell>
-        <StyledTableCell>{snippet.compliance}</StyledTableCell>
+        <StyledTableCell><ComplianceChip compliance={snippet.compliance}/></StyledTableCell>
       </StyledTableRow>
   )
 }
