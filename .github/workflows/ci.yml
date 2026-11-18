@@ -20,12 +20,58 @@ jobs:
           node-version: '20.x'
           cache: 'npm'
 
-      # cypress es una dependencia, pero el build no necesita su binario.
+      # cypress es una dependencia, pero el build no necesita su binario (los tipos sí vienen en el paquete).
       - name: Install dependencies
         run: npm ci
         env:
           CYPRESS_INSTALL_BINARY: 0
 
+      - name: Lint
+        run: npm run lint
+
+      # Los tests e2e no entran en el tsc del build (solo mira src/).
+      - name: Type check e2e tests
+        run: npx tsc -p cypress
+
       # tsc y vite build, igual que en el Dockerfile.
       - name: Build
         run: npm run build
+
+      # El login falso de los tests e2e (src/e2e/E2EAuthProvider.tsx) no puede llegar a un build, ni buildeando en
+      # modo e2e: si su token aparece en el bundle, cualquiera entraría a la UI sin Auth0.
+      - name: Check the e2e login is not in the build
+        run: |
+          npx vite build --mode e2e --outDir dist-e2e-mode
+          if grep -rq "e2e-dummy-token" dist dist-e2e-mode; then
+            echo "::error::El login falso de los tests e2e quedó en el build"
+            exit 1
+          fi
+
+  e2e:
+    name: E2E Tests (Cypress)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      # Instala las dependencias y el binario de Cypress (con caché), levanta el dev server en modo e2e (sin Auth0) y
+      # corre cypress/e2e headless. snippet-service no hace falta: los tests stubbean /api.
+      - name: Run Cypress
+        uses: cypress-io/github-action@v7.4.6
+        with:
+          start: npm run dev:e2e
+          wait-on: 'http://localhost:5173'
+          wait-on-timeout: 120
+
+      - name: Upload screenshots of failed tests
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore

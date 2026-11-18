@@ -46,7 +46,7 @@ export const TestSnippetModal = ({snippetId, open, onClose}: TestSnippetModalPro
                         <Tab key={testCase.id} label={testCase.name} icon={<TestStatusIcon status={testCase.status}/>}
                              iconPosition="end" sx={{minHeight: 48, justifyContent: 'space-between'}}/>
                     ))}
-                    <IconButton disableRipple onClick={() => setValue((testCases?.length ?? 0) + 1)}>
+                    <IconButton disableRipple onClick={() => setValue((testCases?.length ?? 0) + 1)} data-testid={"add-test-button"}>
                         <AddRounded />
                     </IconButton>
                 </Tabs>

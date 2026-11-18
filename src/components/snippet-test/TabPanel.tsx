@@ -46,7 +46,7 @@ export const TabPanel = ({snippetId, value, index, test: initialTest, setTestCas
                     )}
                     <Box display="flex" flexDirection="column" gap={1}>
                         <Typography fontWeight="bold">Name</Typography>
-                        <TextField size="small" value={testData?.name}
+                        <TextField size="small" value={testData?.name} inputProps={{"data-testid": "test-name-input"}}
                                    onChange={(e) => setTestData({...testData, name: e.target.value})}/>
                     </Box>
                     <Box display="flex" flexDirection="column" gap={1}>
@@ -66,6 +66,7 @@ export const TabPanel = ({snippetId, value, index, test: initialTest, setTestCas
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
+                                    data-testid={"test-inputs"}
                                 />
                             )}
                             options={[]}
@@ -88,6 +89,7 @@ export const TabPanel = ({snippetId, value, index, test: initialTest, setTestCas
                             renderInput={(params) => (
                                 <TextField
                                     {...params}
+                                    data-testid={"test-outputs"}
                                 />
                             )}
                             options={[]}
@@ -101,7 +103,8 @@ export const TabPanel = ({snippetId, value, index, test: initialTest, setTestCas
                                 Remove
                             </Button>)
                         }
-                        <Button disabled={!testData?.name} onClick={() => setTestCase(testData ?? {})} variant={"outlined"} startIcon={<Save/>}>
+                        <Button disabled={!testData?.name} onClick={() => setTestCase(testData ?? {})} variant={"outlined"} startIcon={<Save/>}
+                                data-testid={"save-test-button"}>
                             Save
                         </Button>
                         <Button onClick={() => testData?.id && execution.run(testData.id)} variant={"contained"}

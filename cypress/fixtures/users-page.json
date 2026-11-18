@@ -1,0 +1,9 @@
+{
+  "users": [
+    {"id": "auth0|ana", "name": "Ana Gómez", "email": "ana@example.com"},
+    {"id": "google-oauth2|1234", "name": "ana.lopez@example.com", "email": "ana.lopez@example.com"}
+  ],
+  "page": 0,
+  "size": 5,
+  "total": 2
+}

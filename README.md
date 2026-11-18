@@ -66,13 +66,20 @@ To use this UI in production you should use an optimized and static version, thi
 npm run build
 ```
 
-## Cypress
+## End-to-end tests (Cypress)
 
-To start cypress, make sure that the UI is running and enter: 
+The tests in [cypress/e2e](cypress/e2e) run against the dev server in `e2e` mode, which needs neither Auth0 nor snippet-service:
+
+- Instead of Auth0, [E2EAuthProvider](src/e2e/E2EAuthProvider.tsx) renders the app with a fake logged-in user and a dummy token. Only `vite --mode e2e` (the dev server) turns it on: in any `vite build` the branch is dead code and the provider is not in the bundle, which CI checks.
+- Every `/api` call is answered with `cy.intercept` from [cypress/fixtures](cypress/fixtures), in the shapes snippet-service returns. A call no test stubbed fails the test.
 
 ```bash
-npm run cypress
+npm run dev:e2e    # http://localhost:5173, without Auth0
+npm run test:e2e   # headless, in another terminal
+npm run cypress    # or interactively
 ```
+
+CI runs them on every push and pull request.
 
 ## Auth0
 

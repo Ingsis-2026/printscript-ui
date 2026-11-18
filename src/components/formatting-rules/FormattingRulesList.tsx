@@ -64,7 +64,7 @@ const FormattingRulesList = () => {
   }
 
   return (
-    <Card style={{padding: 16, margin: 16}}>
+    <Card style={{padding: 16, margin: 16}} data-testid={"formatting-rules"}>
       <Typography variant={"h6"}>Formatting rules</Typography>
       <List sx={{ width: '100%', bgcolor: 'background.paper' }}>
         {
@@ -73,6 +73,7 @@ const FormattingRulesList = () => {
           return (
             <ListItem
               key={rule.name}
+              data-testid={`rule-${rule.name}`}
               disablePadding
               style={{height: 40}}
             >
