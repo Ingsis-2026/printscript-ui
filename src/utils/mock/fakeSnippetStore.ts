@@ -33,6 +33,15 @@ const INITIAL_SNIPPETS: Snippet[] = [
     author: 'John Doe',
     language: 'printscript',
     extension: 'prs'
+  },
+  {
+    id: 'e0a3c1d2-5b7f-4c8e-9a1b-2d3e4f5a6b7c',
+    name: 'Unchecked Snippet',
+    content: 'let a : number = 5;\nprintln(a);',
+    compliance: 'error',
+    author: 'John Doe',
+    language: 'printscript',
+    extension: 'prs'
   }
 ]
 
@@ -128,13 +137,15 @@ const fakeTestCases: TestCase[] = [
     id: uuid(),
     name: "Test Case 1",
     input: ["A", "B"],
-    output: ["C", "D"]
+    output: ["C", "D"],
+    status: "passed"
   },
   {
     id: uuid(),
     name: "Test Case 2",
     input: ["E", "F"],
-    output: ["G", "H"]
+    output: ["G", "H"],
+    status: "failed"
   },
 ]
 
@@ -238,7 +249,8 @@ export class FakeSnippetStore {
 
   postTestCase(testCase: Partial<TestCase>): TestCase {
     const id = testCase.id ?? uuid()
-    const newTestCase = {...testCase, id} as TestCase
+    // Like snippet-service, a new or edited test has not run yet.
+    const newTestCase = {...testCase, id, status: 'pending'} as TestCase
     this.testCaseMap.set(id,newTestCase)
     return newTestCase
   }

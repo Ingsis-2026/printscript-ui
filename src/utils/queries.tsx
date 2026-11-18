@@ -1,6 +1,6 @@
 import {useMutation, UseMutationResult, useQuery} from 'react-query';
-import {CreateSnippet, PaginatedSnippets, Snippet, UpdateSnippet} from './snippet.ts';
-import {SnippetOperations} from "./snippetOperations.ts";
+import {CreateSnippet, LintResult, PaginatedSnippets, Snippet, SnippetFilters, UpdateSnippet} from './snippet.ts';
+import {SnippetFile, SnippetOperations} from "./snippetOperations.ts";
 import {PaginatedUsers} from "./users.ts";
 import {SnippetServiceOperations} from "./snippetServiceOperations.ts";
 import {TestCase} from "../types/TestCase.ts";
@@ -17,10 +17,15 @@ export const useSnippetsOperations = () => {
   return snippetOperations
 }
 
-export const useGetSnippets = (page: number = 0, pageSize: number = 10, snippetName?: string) => {
+export const useGetSnippets = (page: number = 0, pageSize: number = 10, snippetName?: string, filters: SnippetFilters = {}) => {
   const snippetOperations = useSnippetsOperations()
 
-  return useQuery<PaginatedSnippets, Error>(['listSnippets', page,pageSize,snippetName], () => snippetOperations.listSnippetDescriptors(page, pageSize,snippetName));
+  return useQuery<PaginatedSnippets, Error>(
+      ['listSnippets', page, pageSize, snippetName, filters],
+      () => snippetOperations.listSnippetDescriptors(page, pageSize, snippetName, filters),
+      // Keeps the current page on screen while the next one (or another filter) loads.
+      {keepPreviousData: true},
+  );
 };
 
 export const useGetSnippetById = (id: string) => {
@@ -65,10 +70,24 @@ export const useShareSnippet = () => {
 };
 
 
-export const useGetTestCases = (snippetId: string) => {
+// How often the tests are asked for again while snippet-service is still running them.
+const TEST_POLL_INTERVAL_MS = 2000
+
+/**
+ * US16: until pollUntil (a timestamp), the tests are asked for again every couple of seconds while
+ * any is still pending: snippet-service runs them on its own after the snippet is saved. A test that
+ * was never run stays pending too, hence the deadline.
+ */
+export const useGetTestCases = (snippetId: string, pollUntil?: number) => {
   const snippetOperations = useSnippetsOperations()
 
-  return useQuery<TestCase[] | undefined, Error>(['testCases', snippetId], () => snippetOperations.getTestCases(snippetId), {});
+  return useQuery<TestCase[] | undefined, Error>(['testCases', snippetId], () => snippetOperations.getTestCases(snippetId), {
+    enabled: !!snippetId,
+    refetchInterval: data =>
+        pollUntil !== undefined && Date.now() < pollUntil && !!data?.some(test => test.status === 'pending')
+            ? TEST_POLL_INTERVAL_MS
+            : false,
+  });
 };
 
 
@@ -159,6 +178,21 @@ export const useDeleteSnippet = ({onSuccess}: {onSuccess: () => void}) => {
   );
 }
 
+
+// US6: lints the saved code, so it is asked for again whenever the snippet changes.
+export const useGetLintErrors = (snippetId: string) => {
+  const snippetOperations = useSnippetsOperations()
+
+  return useQuery<LintResult, Error>(['lintErrors', snippetId], () => snippetOperations.getLintErrors(snippetId), {
+    enabled: !!snippetId,
+  });
+}
+
+export const useDownloadSnippet = (snippetId: string) => {
+  const snippetOperations = useSnippetsOperations()
+
+  return useMutation<SnippetFile, Error, boolean>(formatted => snippetOperations.downloadSnippet(snippetId, formatted));
+}
 
 export const useGetFileTypes = () => {
   const snippetOperations = useSnippetsOperations()

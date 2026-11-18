@@ -1,4 +1,4 @@
-import {CreateSnippet, PaginatedSnippets, Snippet, UpdateSnippet} from './snippet'
+import {CreateSnippet, LintResult, PaginatedSnippets, Snippet, SnippetFilters, UpdateSnippet} from './snippet'
 import {PaginatedUsers} from "./users.ts";
 import {TestCase} from "../types/TestCase.ts";
 import {TestCaseResult} from "./queries.tsx";
@@ -6,7 +6,7 @@ import {FileType} from "../types/FileType.ts";
 import {Rule} from "../types/Rule.ts";
 
 export interface SnippetOperations {
-  listSnippetDescriptors(page: number,pageSize: number,sippetName?: string): Promise<PaginatedSnippets>
+  listSnippetDescriptors(page: number,pageSize: number,sippetName?: string, filters?: SnippetFilters): Promise<PaginatedSnippets>
 
   createSnippet(createSnippet: CreateSnippet): Promise<Snippet>
 
@@ -39,4 +39,15 @@ export interface SnippetOperations {
   modifyFormatRule(newRules: Rule[]): Promise<Rule[]>
 
   modifyLintingRule(newRules: Rule[]): Promise<Rule[]>
+
+  // US6: the lint rules of the snippet's owner that the snippet breaks.
+  getLintErrors(snippetId: string): Promise<LintResult>
+
+  // US13: the snippet as a file, as it was saved or formatted with its owner's rules.
+  downloadSnippet(snippetId: string, formatted: boolean): Promise<SnippetFile>
+}
+
+export type SnippetFile = {
+  filename: string
+  content: string
 }

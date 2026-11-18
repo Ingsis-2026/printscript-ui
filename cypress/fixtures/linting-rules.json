@@ -1,0 +1,5 @@
+[
+  {"name": "identifier_format", "isActive": true, "value": "camel case"},
+  {"name": "mandatory-variable-or-literal-in-println", "isActive": true, "value": null},
+  {"name": "mandatory-variable-or-literal-in-readInput", "isActive": false, "value": null}
+]

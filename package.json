@@ -11,7 +11,9 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "cypress": "cypress open"
+    "dev:e2e": "vite --mode e2e --port 5173 --strictPort",
+    "cypress": "cypress open",
+    "test:e2e": "cypress run"
   },
   "dependencies": {
     "@auth0/auth0-react": "^2.2.4",
@@ -19,6 +21,7 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.15.12",
     "@mui/material": "^5.15.12",
+    "@newrelic/browser-agent": "1.324.1",
     "@types/prismjs": "^1.26.3",
     "auto-bind": "^5.0.1",
     "axios": "^1.6.7",

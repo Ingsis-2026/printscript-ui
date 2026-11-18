@@ -1,0 +1,6 @@
+{
+  "valid": false,
+  "errors": [
+    {"rule": "The following identifier must be in camel case", "line": 1, "column": 5}
+  ]
+}

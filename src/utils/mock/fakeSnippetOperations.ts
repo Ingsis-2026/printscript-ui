@@ -1,6 +1,6 @@
-import {SnippetOperations} from '../snippetOperations'
+import {SnippetFile, SnippetOperations} from '../snippetOperations'
 import {FakeSnippetStore} from './fakeSnippetStore'
-import {CreateSnippet, PaginatedSnippets, Snippet, UpdateSnippet} from '../snippet'
+import {CreateSnippet, LintResult, PaginatedSnippets, Snippet, UpdateSnippet} from '../snippet'
 import autoBind from 'auto-bind'
 import {PaginatedUsers} from "../users.ts";
 import {TestCase} from "../../types/TestCase.ts";
@@ -124,6 +124,19 @@ export class FakeSnippetOperations implements SnippetOperations {
   modifyLintingRule(newRules: Rule[]): Promise<Rule[]> {
     return new Promise(resolve => {
       setTimeout(() => resolve(this.fakeStore.modifyLintingRule(newRules)), DELAY)
+    })
+  }
+
+  getLintErrors(): Promise<LintResult> {
+    return new Promise(resolve => {
+      setTimeout(() => resolve({valid: true, errors: []}), DELAY)
+    })
+  }
+
+  downloadSnippet(snippetId: string): Promise<SnippetFile> {
+    const snippet = this.fakeStore.getSnippetById(snippetId)
+    return new Promise(resolve => {
+      setTimeout(() => resolve({filename: `${snippet?.name}.${snippet?.extension}`, content: snippet?.content ?? ''}), DELAY)
     })
   }
 }

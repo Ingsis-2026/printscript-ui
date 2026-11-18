@@ -1,0 +1,13 @@
+[
+  {"name": "enforce-spacing-before-colon-in-declaration", "isActive": false, "value": null},
+  {"name": "enforce-spacing-after-colon-in-declaration", "isActive": true, "value": null},
+  {"name": "enforce-spacing-around-equals", "isActive": true, "value": null},
+  {"name": "enforce-no-spacing-around-equals", "isActive": false, "value": null},
+  {"name": "mandatory-single-space-separation", "isActive": false, "value": null},
+  {"name": "mandatory-space-surrounding-operations", "isActive": false, "value": null},
+  {"name": "mandatory-line-break-after-statement", "isActive": true, "value": null},
+  {"name": "line-breaks-after-println", "isActive": true, "value": "1"},
+  {"name": "if-brace-same-line", "isActive": true, "value": null},
+  {"name": "if-brace-below-line", "isActive": false, "value": null},
+  {"name": "indent-inside-if", "isActive": true, "value": "4"}
+]
