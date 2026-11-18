@@ -12,7 +12,7 @@ import {
   UpdateSnippet
 } from './snippet'
 import {PaginatedUsers} from './users.ts'
-import {TestCase} from '../types/TestCase.ts'
+import {TestCase, TestStatus} from '../types/TestCase.ts'
 import {TestCaseResult} from './queries.tsx'
 import {FileType} from '../types/FileType.ts'
 import {Rule} from '../types/Rule.ts'
@@ -29,7 +29,7 @@ type SnippetResponse = {
   version: string
   content: string
   ownerId: string
-  status: 'PENDING' | 'COMPLIANT' | 'NOT_COMPLIANT' | 'INVALID'
+  status: 'PENDING' | 'COMPLIANT' | 'NOT_COMPLIANT' | 'INVALID' | 'ERROR'
 }
 
 type SnippetPage = {
@@ -50,6 +50,7 @@ type TestCaseResponse = {
   name: string
   inputs: string[]
   outputs: string[]
+  status: 'PENDING' | 'PASSED' | 'FAILED'
 }
 
 type UserPage = {
@@ -72,6 +73,8 @@ const COMPLIANCE: Record<SnippetResponse['status'], ComplianceEnum> = {
   NOT_COMPLIANT: 'not-compliant',
   // The current parser no longer accepts it: it was saved with an earlier version.
   INVALID: 'failed',
+  // Linting or validating it was given up after several retries.
+  ERROR: 'error',
 }
 
 const STATUS: Record<ComplianceEnum, SnippetResponse['status']> = {
@@ -79,6 +82,14 @@ const STATUS: Record<ComplianceEnum, SnippetResponse['status']> = {
   'compliant': 'COMPLIANT',
   'not-compliant': 'NOT_COMPLIANT',
   'failed': 'INVALID',
+  'error': 'ERROR',
+}
+
+// US16: how each test did the last time it ran, which snippet-service runs on its own whenever the snippet is saved.
+const TEST_STATUS: Record<TestCaseResponse['status'], TestStatus> = {
+  PENDING: 'pending',
+  PASSED: 'passed',
+  FAILED: 'failed',
 }
 
 /**
@@ -292,4 +303,5 @@ const toTestCase = (test: TestCaseResponse): TestCase => ({
   name: test.name,
   input: test.inputs,
   output: test.outputs,
+  status: TEST_STATUS[test.status],
 })
